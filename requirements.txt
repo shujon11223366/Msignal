@@ -3,4 +3,3 @@ uvicorn[standard]
 pandas
 pandas-ta
 httpx
-itertools
