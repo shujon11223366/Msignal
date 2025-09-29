@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Live Trading Signals</title>
+    <style>
+        body {
+            background: #111;
+            color: white;
+            font-family: Arial, sans-serif;
+            display: flex;
+            justify-content: center;
+            padding: 20px;
+        }
+        #signal-widget {
+            max-width: 900px;
+            width: 100%;
+            background: #111;
+            border-radius: 8px;
+            padding: 15px;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: auto;
+        }
+        th, td {
+            padding: 8px;
+            border: 1px solid #333;
+            text-align: center;
+        }
+        th {
+            background: #222;
+        }
+    </style>
+</head>
+<body>
+    <div id="signal-widget">
+        <h3 style="color:#f39c12;text-align:center;">Live Trading Signals</h3>
+        <table id="signal-table">
+            <thead>
+                <tr>
+                    <th>Pair</th>
+                    <th>1 min</th>
+                    <th>5 min</th>
+                    <th>15 min</th>
+                    <th>1 hr</th>
+                    <th>4 hr</th>
+                </tr>
+            </thead>
+            <tbody id="signal-body"></tbody>
+        </table>
+    </div>
+
+    <script>
+        const pairs = ["EUR/USD", "BTC/USD", "ETH/USD", "USD/JPY", "GBP/USD", "AUD/USD"];
+        const timeframes = ["1min","5min","15min","1h","4h"];
+
+        async function fetchSignals() {
+            const body = document.getElementById("signal-body");
+            body.innerHTML = "<tr><td colspan='6' style='color:#ccc;padding:10px;text-align:center;'>Loading...</td></tr>";
+
+            let results = {};
+            try {
+                for (let pair of pairs) {
+                    results[pair] = {};
+                    for (let tf of timeframes) {
+                        let res = await fetch(`https://msignal.onrender.com/api/signal?pair=${pair}&timeframe=${tf}`);
+                        let data = await res.json();
+                        results[pair][tf] = data;
+                    }
+                }
+
+                body.innerHTML = "";
+                for (let pair of pairs) {
+                    let row = document.createElement("tr");
+                    row.innerHTML = `<td style="color:#f39c12;">${pair}</td>`;
+                    for (let tf of timeframes) {
+                        let signalData = results[pair][tf];
+                        let signal = signalData.signal || "N/A";
+                        let color = signal.includes("Buy") ? "#2ecc71" : "#e74c3c";
+                        row.innerHTML += `<td style="color:${color};">${signal}</td>`;
+                    }
+                    body.appendChild(row);
+                }
+            } catch (err) {
+                body.innerHTML = `<tr><td colspan='6' style='color:red;padding:10px;text-align:center;'>Error loading signals.</td></tr>`;
+                console.error(err);
+            }
+        }
+
+        fetchSignals();
+        setInterval(fetchSignals, 60000);
+    </script>
+</body>
+</html>
