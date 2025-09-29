@@ -10,7 +10,6 @@ app = FastAPI()
 # ======================
 # === CONFIGURATION ===
 # ======================
-
 TWELVEDATA_KEYS = [
     "0a25bcb593e047b2aded75b1db91b130",
     "b032b8736d00401ab3321a4f7bdcb41b",
@@ -94,7 +93,7 @@ def get_summary(pairs: str = "EUR/USD,BTC/USD,ETH/USD", timeframes: str = "1min,
 
 def fetch_symbol(symbol: str, interval: str):
     api_key = get_twelvedata_key()
-    symbol = symbol.replace(" ", "")  # Remove spaces
+    symbol = symbol.replace(" ", "")
     url = f"https://api.twelvedata.com/time_series?symbol={symbol}&interval={interval}&apikey={api_key}&outputsize=5000"
     r = httpx.get(url).json()
 
@@ -103,6 +102,11 @@ def fetch_symbol(symbol: str, interval: str):
 
     df = pd.DataFrame(r["values"])
     df.rename(columns={"open": "o", "high": "high", "low": "low", "close": "close"}, inplace=True)
+
+    # ✅ Convert OHLC columns to floats
+    for col in ["o", "high", "low", "close"]:
+        df[col] = df[col].astype(float)
+
     return df
 
 
