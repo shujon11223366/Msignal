@@ -1,0 +1,7 @@
+fastapi
+uvicorn[standard]
+pandas
+pandas_ta
+httpx
+numpy
+python-dotenv
