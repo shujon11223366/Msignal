@@ -11,7 +11,6 @@ app = FastAPI()
 # === CONFIGURATION ===
 # ======================
 
-# Multiple TwelveData API keys (rotate them to avoid rate limits)
 TWELVEDATA_KEYS = [
     "0a25bcb593e047b2aded75b1db91b130",
     "b032b8736d00401ab3321a4f7bdcb41b",
@@ -25,7 +24,6 @@ TWELVEDATA_KEYS = [
     "29251dc6d59f4cf6b8318347eed7071d"
 ]
 
-# Rotate keys
 key_cycle = itertools.cycle(TWELVEDATA_KEYS)
 
 
@@ -44,21 +42,16 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# ======================
-# === ROOT ROUTE ===
-# ======================
+
 @app.get("/")
 def root():
     return {"status": "AI Signal Backend Running 🚀"}
 
 
-# ======================
-# === SINGLE SIGNAL ===
-# ======================
 @app.get("/api/signal")
 def get_signal(pair: str = "EUR/USD", timeframe: str = "5min"):
     try:
-        df = fetch_forex(pair, timeframe)
+        df = fetch_symbol(pair, timeframe)
         signal_data = calculate_indicators(df)
         smc_data = detect_smc(df)
 
@@ -73,11 +66,8 @@ def get_signal(pair: str = "EUR/USD", timeframe: str = "5min"):
         return {"error": str(e)}
 
 
-# ======================
-# === MULTI SUMMARY ===
-# ======================
 @app.get("/api/summary")
-def get_summary(pairs: str = "EUR/USD,BTC/USD,GBP/USD", timeframes: str = "1min,5min,15min"):
+def get_summary(pairs: str = "EUR/USD,BTC/USD,ETH/USD", timeframes: str = "1min,5min,15min"):
     result = {}
     pair_list = pairs.split(",")
     timeframe_list = timeframes.split(",")
@@ -86,7 +76,7 @@ def get_summary(pairs: str = "EUR/USD,BTC/USD,GBP/USD", timeframes: str = "1min,
         result[pair] = {}
         for timeframe in timeframe_list:
             try:
-                df = fetch_forex(pair, timeframe)
+                df = fetch_symbol(pair, timeframe)
                 signal_data = calculate_indicators(df)
                 smc_data = detect_smc(df)
 
@@ -102,12 +92,9 @@ def get_summary(pairs: str = "EUR/USD,BTC/USD,GBP/USD", timeframes: str = "1min,
     return {"results": result}
 
 
-# ======================
-# === DATA FETCHERS ===
-# ======================
-def fetch_forex(symbol: str, interval: str):
+def fetch_symbol(symbol: str, interval: str):
     api_key = get_twelvedata_key()
-    symbol = symbol.replace("/", "")
+    symbol = symbol.replace(" ", "")  # Remove spaces
     url = f"https://api.twelvedata.com/time_series?symbol={symbol}&interval={interval}&apikey={api_key}&outputsize=5000"
     r = httpx.get(url).json()
 
@@ -119,9 +106,6 @@ def fetch_forex(symbol: str, interval: str):
     return df
 
 
-# ======================
-# === ANALYSIS LOGIC ===
-# ======================
 def calculate_indicators(df):
     df["rsi"] = ta.rsi(df["close"], length=14)
     df["ema20"] = ta.ema(df["close"], length=20)
@@ -136,19 +120,25 @@ def calculate_indicators(df):
     tags = []
 
     if ema20 > ema50:
-        score += 1; tags.append("EMA Bullish")
+        score += 1
+        tags.append("EMA Bullish")
     else:
-        score -= 1; tags.append("EMA Bearish")
+        score -= 1
+        tags.append("EMA Bearish")
 
     if rsi < 30:
-        score += 1; tags.append("RSI Oversold")
+        score += 1
+        tags.append("RSI Oversold")
     elif rsi > 70:
-        score -= 1; tags.append("RSI Overbought")
+        score -= 1
+        tags.append("RSI Overbought")
 
     if df["macd"].iloc[-1] > 0:
-        score += 1; tags.append("MACD Bullish")
+        score += 1
+        tags.append("MACD Bullish")
     else:
-        score -= 1; tags.append("MACD Bearish")
+        score -= 1
+        tags.append("MACD Bearish")
 
     if score >= 2:
         signal = "Strong Buy"
@@ -166,7 +156,8 @@ def calculate_indicators(df):
 
 def detect_smc(df):
     confluence = []
-    if len(df) < 3: return confluence
+    if len(df) < 3:
+        return confluence
 
     if df["close"].iloc[-1] > df["high"].iloc[-2]:
         confluence.append("BOS ↑")
