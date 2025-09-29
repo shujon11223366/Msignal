@@ -1,7 +1,6 @@
 fastapi
 uvicorn[standard]
 pandas
-pandas_ta
+pandas-ta
 httpx
-numpy
-python-dotenv
+itertools
